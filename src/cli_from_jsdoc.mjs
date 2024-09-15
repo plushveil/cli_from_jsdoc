@@ -19,7 +19,7 @@ export async function execute (cli, args = process.argv.slice(2)) {
 
   const task = cli.exports.find(e => e.name === args[0])
   if (!task) {
-    console.error(`Unknown task: ${args[0]}`)
+    if (args[0]) console.error(`Unknown task: ${args[0]}`)
     manual(cli)
     process.exit(1)
   }
@@ -47,7 +47,7 @@ function manual (cli) {
   if (cli.exports.length > 1) {
     console.log('Tasks:')
     for (const { name, doc } of cli.exports) {
-      console.log(`  ${name.padEnd(24)} ${doc.description.trim().replace(/\n/, '\n'.padEnd(28))}`)
+      console.log(`  ${name.padEnd(24)} ${doc?.description.trim().replace(/\n/, '\n'.padEnd(28)) || ''}`)
     }
     console.log('')
   }

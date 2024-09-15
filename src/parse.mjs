@@ -24,6 +24,7 @@ import { parse as parseComment } from 'comment-parser'
  * @typedef {Object} Source
  * @property {string} file - The file that contains the export.
  * @property {string} name - The name of the export in the file.
+ * @property {number} position - The position of the export in the file.
  */
 
 /**
@@ -66,27 +67,42 @@ export default async function parse (file) {
           name: node.declaration.id.name,
           source: {
             file: cli.file,
-            name: node.declaration.id.name
+            name: node.declaration.id.name,
+            position: node.declaration.start
           }
         })
-      } else if (node.specifiers) {
+      } else if (node.specifiers?.length) {
         node.specifiers.forEach(specifier => {
-          cli.exports.push({
-            name: specifier.exported.name,
-            source: {
-              file: node.source
-                ? url.fileURLToPath(import.meta.resolve(node.source.value, url.pathToFileURL(path.dirname(cli.file))))
-                : cli.file,
-              name: specifier.local.name,
-            }
-          })
+          if (node.source) {
+            const file = url.fileURLToPath(import.meta.resolve(node.source.value, url.pathToFileURL(path.dirname(cli.file))))
+            cli.exports.push((async () => {
+              const result = {
+                name: specifier.exported.name,
+                source: await getSource(file, specifier.local.name)
+              }
+              return result
+            })())
+          } else {
+            cli.exports.push({
+              name: specifier.exported.name,
+              source: {
+                file: cli.file,
+                name: specifier.local.name,
+                position: specifier.exported.start
+              }
+            })
+          }
         })
       }
     },
-    ExportDefaultDeclaration () {
+    ExportDefaultDeclaration (node) {
       cli.exports.push({
         name: 'default',
-        source: cli.file
+        source: {
+          file: cli.file,
+          name: 'default',
+          position: node.start
+        }
       })
     },
   })
@@ -101,6 +117,40 @@ export default async function parse (file) {
 }
 
 /**
+ * Parses the given file and returns the position of the export with the given name.
+ * @param {string} file - The file to parse.
+ * @param {string} name - The name of the export to find.
+ * @returns {Promise<Source>}
+ */
+async function getSource (file, name) {
+  if (!fs.existsSync(file)) return 0
+  if (!fs.statSync(file).isFile()) return 0
+
+  const content = fs.readFileSync(file, 'utf-8')
+  const ast = acorn.parse(content, { ecmaVersion: 'latest', sourceType: 'module' })
+
+  let node = null
+  walk.simple(ast, {
+    ExportNamedDeclaration (n) {
+      if (n.declaration?.id?.name === name) node = n
+    },
+    ExportDefaultDeclaration (n) {
+      if (name === 'default') node = n
+    }
+  })
+
+  if (node) {
+    return {
+      file,
+      name,
+      position: node.start
+    }
+  }
+
+  throw new Error(`Export "${name}" not found in file: ${file}`)
+}
+
+/**
  * Creates a function that returns the export documentation for the given export.
  * @param {CLI} cli - Neccessary context for the export documentation function.
  * @param {string} content - The content of the file that contains the export.
@@ -110,43 +160,23 @@ function getExportDocGetter (cli, content) {
   return async (exp) => {
     const comments = []
     const code = exp.source.file === cli.file ? content : await fs.promises.readFile(exp.source.file, { encoding: 'utf-8' })
-    const ast = acorn.parse(code, {
+    acorn.parse(code, {
       ecmaVersion: 'latest',
       sourceType: 'module',
       onComment: (block, text, start, end) => {
         comments.push({ block, text, start, end })
       },
     })
+    const comment = comments.find(({ end }, index, arr) => {
+      const next = arr[index + 1]
+      if (!next) return true
 
-    const getText = (before) => {
-      return comments.reduce((prev, curr) => {
-        if (curr?.end < before) return curr
-        else return prev
-      }, null)?.text
-    }
-
-    walk.simple(ast, {
-      FunctionDeclaration (node) {
-        if (node.id.name === exp.name) {
-          const text = getText(node.start)
-          exp.doc = text ? parseComment(`/*${text}*/`, { spacing: 'preserve' })[0] : null
-        }
-      },
-      VariableDeclaration (node) {
-        for (const declaration of node.declarations) {
-          if (declaration.id.name === exp.name) {
-            const text = getText(node.start)
-            exp.doc = text ? parseComment(`/*${text}*/`, { spacing: 'preserve' })[0] : null
-          }
-        }
-      },
-      ClassDeclaration (node) {
-        if (node.id.name === exp.name) {
-          const text = getText(node.start)
-          exp.doc = text ? parseComment(`/*${text}*/`, { spacing: 'preserve' })[0] : null
-        }
-      },
+      return end < exp.source.position && next.start > exp.source.position
     })
+
+    if (comment) {
+      exp.doc = parseComment(`/*${comment.text}*/`)[0]
+    }
   }
 }
 

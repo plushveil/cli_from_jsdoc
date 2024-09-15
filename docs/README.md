@@ -1,12 +1,14 @@
 # CLI from JSDoc
 
-> Convert JSDoc comments to a command line interface
+Create a CLI from a JSDoc annotated JavaScript file
+
 
 ## Installation
 
 ```bash
 npm install -g cli_from_jsdoc
 ```
+
 
 ## Usage
 
