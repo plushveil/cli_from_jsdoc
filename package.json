@@ -1,0 +1,26 @@
+{
+  "name": "@plushveil/cli_from_jsdoc",
+  "version": "0.0.1",
+  "description": "Create a CLI from a JSDoc annotated JavaScript file",
+  "author": "Plushveil <plushveil@gray.blue>",
+  "license": "SEE LICENSE IN LICENSE",
+  "bin": {
+    "cli_from_jsdoc": "./bin/cli_from_jsdoc.mjs"
+  },
+  "main": "./src/cli_from_jsdoc.mjs",
+  "scripts": {
+    "cli_from_jsdoc": "node ./bin/cli_from_jsdoc.mjs",
+    "test": "npm-run-all test:*",
+    "test:lint": "eslint ."
+  },
+  "dependencies": {
+    "acorn": "^8.12.1",
+    "acorn-walk": "^8.3.4",
+    "comment-parser": "^1.4.1"
+  },
+  "devDependencies": {
+    "eslint": "^9.10.0",
+    "neostandard": "^0.11.5",
+    "npm-run-all": "^4.1.5"
+  }
+}
