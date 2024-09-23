@@ -1,6 +1,6 @@
 {
   "name": "@plushveil/cli_from_jsdoc",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "Create a CLI from a JSDoc annotated JavaScript file",
   "author": "Plushveil <plushveil@gray.blue>",
   "license": "SEE LICENSE IN LICENSE",

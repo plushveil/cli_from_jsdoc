@@ -14,9 +14,9 @@
  */
 export default async function parseArgv (cli, args) {
   /** @type {Export} */
-  const program = cli.exports.length === 1 ? cli.exports.pop() : cli.exports.find(e => e.name === args[0])
+  const program = cli.exports.length >= 1 ? cli.exports[0] : cli.exports.find(e => e.name === args[0])
   if (!program) throw new Error(`Invalid command line arguments: ${args.join(' ')}`)
-  args.shift()
+  if (cli.exports.length > 1) args.shift()
 
   const parsed = []
 
@@ -26,12 +26,12 @@ export default async function parseArgv (cli, args) {
     const firstParam = []
     while (args.length && !args[0].startsWith('-')) firstParam.push(args.shift())
     parsed.push(firstParam.join(' '))
-  } else {
+  } else if (params.length > 1) {
     parsed.push(...args.splice(0, params.length))
     args = args.slice(params.length - 1)
   }
 
-  // optional parameters
+  // parse optional parameter keywords
   const optionMap = {}
   const options = program.doc.tags.filter(t => t.tag === 'param' && t.optional === true)
   const keywords = options.reduce((keywords, option) => {
@@ -47,6 +47,12 @@ export default async function parseArgv (cli, args) {
     while (keywords.includes(kw)) keywords.splice(keywords.indexOf(kw), 1)
   }
 
+  // check for invalid arguments
+  if (parsed.find(p => keywords.find(k => p.startsWith(k)))) {
+    throw new Error(`You likely passed an option before specifying all arguments. Invalid arguments: ${parsed.join(' ')}`)
+  }
+
+  // parse optional parameters
   const optionObj = {}
   const argString = args.join(' ')
   const optionMatches = keywords.length ? [...(' ' + argString).matchAll(new RegExp(` (${keywords.sort((a, b) => b.length - a.length).join('|')})`, 'g'))] : []

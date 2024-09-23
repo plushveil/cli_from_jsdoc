@@ -1,20 +1,16 @@
+#!/usr/bin/env node
+
 import * as path from 'node:path'
 import * as fs from 'node:fs'
-import * as url from 'node:url'
 
 import * as cli from '../src/cli_from_jsdoc.mjs'
 
-const __filename = url.fileURLToPath(import.meta.url)
-const __init = path.resolve(process.argv[1])
-
-if (__init === __filename) {
-  try {
-    await main(process.cwd())
-  } catch (err) {
-    console.log(`> cli_from_jsdoc ${process.cwd()} -- ${process.argv.slice(2).join(' ')}`)
-    console.error(err)
-    process.exit(1)
-  }
+try {
+  await main(process.cwd())
+} catch (err) {
+  console.log(`> cli_from_jsdoc ${process.cwd()} -- ${process.argv.slice(2).join(' ')}`)
+  console.error(err)
+  process.exit(1)
 }
 
 /**

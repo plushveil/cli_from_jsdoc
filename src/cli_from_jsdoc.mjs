@@ -20,15 +20,23 @@ export async function execute (cli, args = process.argv.slice(2)) {
   if (['-h', '--help'].includes(args[0])) return manual(cli)
   if (cli.exports.find(e => e.name === args[0]) && args.slice(1).find(a => ['-h', '--help'].includes(a))) return manualForExport(cli, args[0])
 
-  const task = cli.exports.find(e => e.name === args[0])
+  const task = cli.exports.length === 1 ? cli.exports[0] : cli.exports.find(e => e.name === args[0])
   if (!task) {
     if (args[0]) console.error(`Unknown task: ${args[0]}`)
     manual(cli)
     process.exit(1)
   }
 
+  let params
+  try {
+    params = await parseArgv(cli, args)
+  } catch (err) {
+    console.error(err.message)
+    manualForExport(cli, task.name)
+    process.exit(1)
+  }
+
   const api = await import(task.source.file)
-  const params = await parseArgv(cli, args)
   const result = await api[task.source.name](...params)
   if (typeof result !== 'undefined') console.log(result)
 
@@ -78,7 +86,7 @@ function manualForExport (cli, name) {
     24
   )
 
-  console.log(`Usage: ${BOLD}${cli.name}${RESET}${taskName}${args.length ? args.map(arg => ` <${arg.name}>`).join(' ') : ''} [options]`)
+  console.log(`Usage: ${BOLD}${cli.name}${RESET}${taskName}${args.length ? ' ' + args.map(arg => `<${arg.name}>`).join(' ') : ''} [options]`)
   console.log('')
   console.log(task.doc.description.trim())
   console.log('')
