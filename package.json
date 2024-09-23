@@ -5,7 +5,7 @@
   "author": "Plushveil <plushveil@gray.blue>",
   "license": "SEE LICENSE IN LICENSE",
   "bin": {
-    "cli_from_jsdoc": "./bin/cli_from_jsdoc.mjs"
+    "cli_from_jsdoc": "bin/cli_from_jsdoc.mjs"
   },
   "main": "./src/cli_from_jsdoc.mjs",
   "scripts": {
