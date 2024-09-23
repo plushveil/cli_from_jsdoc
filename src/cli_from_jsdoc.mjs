@@ -2,6 +2,9 @@ import parseArgv from './parseArgv.mjs'
 
 export { default as parse } from './parse.mjs'
 
+const BOLD = '\x1b[1m'
+const RESET = '\x1b[0m'
+
 /**
  * @typedef {import('./parse.mjs').CLI} CLI
  */
@@ -42,17 +45,21 @@ export async function execute (cli, args = process.argv.slice(2)) {
  */
 function manual (cli) {
   if (cli.exports.length === 1) return manualForExport(cli, cli.exports[0].name)
-  console.log(`Usage: ${cli.name}${cli.exports.length > 1 ? ' <task>' : ''} [options]`)
+
+  console.log(`Usage: ${BOLD}${cli.name}${RESET}${cli.exports.length > 1 ? ' <task>' : ''} [options]`)
   console.log('')
+
+  const whitespace = cli.exports.reduce((max, { name }) => Math.max(max, name.length + 4), 24)
   if (cli.exports.length > 1) {
     console.log('Tasks:')
     for (const { name, doc } of cli.exports) {
-      console.log(`  ${name.padEnd(24)} ${doc?.description.trim().replace(/\n/, '\n'.padEnd(28)) || ''}`)
+      console.log(`  ${name.padEnd(whitespace)} ${doc?.description.trim().replaceAll('\n', '\n'.padEnd(whitespace + 4)) || ''}`)
     }
     console.log('')
   }
+
   console.log('Options:')
-  console.log('  -h, --help               Display this manual.')
+  console.log(`  ${'-h, --help'.padEnd(whitespace)} Display this manual.`)
 }
 
 /**
@@ -62,28 +69,37 @@ function manual (cli) {
  */
 function manualForExport (cli, name) {
   const task = cli.exports.find(e => e.name === name)
-  const args = task.doc.tags.filter(t => t.tag === 'param' && t.optional === false)
   const taskName = cli.exports.length > 1 ? ` ${task.name}` : ''
+  const args = task.doc?.tags.filter(t => t.tag === 'param' && t.optional === false) || []
+  const options = task.doc?.tags.filter(t => t.tag === 'param' && t.optional === true) || []
+  const whitespace = Math.max(
+    args.reduce((max, { name }) => Math.max(max, name.length + 4), 0),
+    options.reduce((max, { name, type }) => Math.max(max, `-X, --${name} ${type === 'boolean' ? '' : ` <${type}>`}`.length + 4), 0),
+    24
+  )
 
-  console.log(`Usage: ${cli.name}${taskName}${args.length ? args.map(arg => ` <${arg.name}>`).join(' ') : ''} [options]`)
+  console.log(`Usage: ${BOLD}${cli.name}${RESET}${taskName}${args.length ? args.map(arg => ` <${arg.name}>`).join(' ') : ''} [options]`)
   console.log('')
   console.log(task.doc.description.trim())
   console.log('')
+
   if (args.length) {
     console.log('Arguments:')
     for (const arg of args) {
-      console.log(`  ${`<${arg.name}>`.padEnd(24)} ${arg.description.replace(/^[ -]*/, '').trim()}`)
+      console.log(`  ${`<${arg.name}>`.padEnd(whitespace)} ${arg.description.replace(/^[ -]*/, '').trim()}`)
     }
     console.log('')
   }
+
   console.log('Options:')
-  console.log('  -h, --help               Display this manual.')
-  const options = task.doc.tags.filter(t => t.tag === 'param' && t.optional === true)
+  console.log(`  ${'-h, --help'.padEnd(whitespace)} Display this manual.`)
   if (options.length) {
     for (const option of options) {
+      const shortcutConfilct = options.find(o => o.name.slice(0, 1) === option.name.slice(0, 1) && o !== option)
+      const shortcut = shortcutConfilct ? '' : `-${option.name.slice(0, 1)}, `
       const param = option.type === 'boolean' ? '' : ` <${option.type}>`
       const defaultValue = option.default ? ` Defaults to ${option.default}.` : ''
-      console.log(`  ${`--${option.name}${param}`.padEnd(24)} ${option.description.replace(/^[ -]*/, '').trim()}${defaultValue}`)
+      console.log(`  ${`${shortcut}--${option.name}${param}`.padEnd(whitespace)} ${option.description.replace(/^[ -]*/, '').trim()}${defaultValue}`)
     }
   }
 }

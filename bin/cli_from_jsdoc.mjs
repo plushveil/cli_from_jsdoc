@@ -29,6 +29,7 @@ export default async function main (cwd = process.cwd()) {
   if (!fs.existsSync(path.join(cwd, 'package.json'))) throw new Error(`No package.json found in ${cwd}`)
 
   const pkg = JSON.parse(fs.readFileSync(path.join(cwd, 'package.json'), { encoding: 'utf-8' }))
+  if (!pkg.main) throw new Error(`No "main" file specified in ${path.join(cwd, 'package.json')}`)
   const userProvidedFile = path.resolve(cwd, ...pkg.main.split('/'))
 
   return await cli.execute(await cli.parse(userProvidedFile), process.argv.slice(2))

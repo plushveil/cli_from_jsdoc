@@ -30,7 +30,6 @@ import { parse as parseComment } from 'comment-parser'
 /**
  * Parses the given file and returns a CLI object.
  * @param {string} file - The file to parse.
- * @param {string} [test] - A test to run.
  * @returns {Promise<CLI>}
  */
 export default async function parse (file) {
@@ -175,7 +174,7 @@ function getExportDocGetter (cli, content) {
     })
 
     if (comment) {
-      exp.doc = parseComment(`/*${comment.text}*/`)[0]
+      exp.doc = parseComment(`/*${comment.text}*/`, { spacing: 'preserve' })[0]
     }
   }
 }
