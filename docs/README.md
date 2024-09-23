@@ -6,7 +6,7 @@ Create a CLI from a JSDoc annotated JavaScript file
 ## Installation
 
 ```bash
-npm install -g cli_from_jsdoc
+npm install cli_from_jsdoc
 ```
 
 
