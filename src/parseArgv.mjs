@@ -25,10 +25,12 @@ export default async function parseArgv (cli, args) {
   if (params.length === 1) {
     const firstParam = []
     while (args.length && !args[0].startsWith('-')) firstParam.push(args.shift())
-    parsed.push(firstParam.join(' '))
+    parsed.push(getValue(firstParam.join(' '), params[0]))
   } else if (params.length > 1) {
-    parsed.push(...args.splice(0, params.length))
-    args = args.slice(params.length - 1)
+    for (const param of params) {
+      const value = getValue(args.shift(), param)
+      parsed.push(value)
+    }
   }
 
   // parse optional parameter keywords
@@ -48,7 +50,7 @@ export default async function parseArgv (cli, args) {
   }
 
   // check for invalid arguments
-  if (parsed.find(p => keywords.find(k => p.startsWith(k)))) {
+  if (parsed.find(p => keywords.find(k => p?.startsWith?.(k)))) {
     throw new Error(`You likely passed an option before specifying all arguments. Invalid arguments: ${parsed.join(' ')}`)
   }
 
@@ -56,6 +58,11 @@ export default async function parseArgv (cli, args) {
   const optionObj = {}
   const argString = args.join(' ')
   const optionMatches = keywords.length ? [...(' ' + argString).matchAll(new RegExp(` (${keywords.sort((a, b) => b.length - a.length).join('|')})`, 'g'))] : []
+  if (optionMatches.length) {
+    const first = optionMatches.reduce((match, m) => match.index < m.index ? match : m, { index: Infinity })
+    if (first.index !== 0) throw new Error(`Unknown argument: ${argString.slice(0, first.index)}`)
+  }
+
   for (let i = 0; i < optionMatches.length; i++) {
     const optionInput = optionMatches[i]
     const optionName = optionMatches[i][1]
@@ -81,6 +88,11 @@ export default async function parseArgv (cli, args) {
     parsed.push(value)
   }
 
+  while (typeof parsed[parsed.length - 1] === 'undefined') parsed.pop()
+  if (parsed.length < params.length) {
+    throw new Error(`Missing required arguments: ${params.slice(parsed.length).map(p => `<${p.name}>`).join(' ')}`)
+  }
+
   return parsed
 }
 
@@ -92,10 +104,20 @@ export default async function parseArgv (cli, args) {
  */
 function getValue (valueString, option) {
   if (option.type === 'boolean') {
-    while (valueString.startsWith('-')) valueString = valueString.slice(1)
-    return !valueString.startsWith('no-')
+    if (valueString.includes('-')) {
+      while (valueString.startsWith('-')) valueString = valueString.slice(1)
+      return !valueString.startsWith('no-')
+    } else {
+      if (valueString === 'false' || valueString === '0' || valueString.toLowerCase().startsWith('n')) return false
+      if (valueString === 'true' || valueString === '1' || valueString.toLowerCase().startsWith('y')) return true
+      throw new Error(`Invalid boolean: ${valueString}`)
+    }
   }
-  if (option.type === 'number') return Number(valueString)
+  if (option.type === 'number') {
+    const value = (valueString.includes('.')) ? parseFloat(valueString) : Number(valueString)
+    if (isNaN(value)) throw new Error(`Invalid number: ${valueString}`)
+    return value
+  }
   if (option.type === 'string') return String(valueString)
   if (option.type.endsWith('[]') || option.type.toLowerCase().startsWith('array<')) {
     if (valueString.startsWith('[') && valueString.endsWith(']')) return JSON.parse(valueString)
