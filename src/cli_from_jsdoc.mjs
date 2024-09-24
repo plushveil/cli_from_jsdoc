@@ -46,6 +46,8 @@ export async function execute (cli, args = process.argv.slice(2)) {
           result.on('end', resolve)
           result.on('error', reject)
         })
+      } else {
+        console.log(result)
       }
     } else {
       console.log(result)
