@@ -38,7 +38,19 @@ export async function execute (cli, args = process.argv.slice(2)) {
 
   const api = await import(task.source.file)
   const result = await api[task.source.name](...params)
-  if (typeof result !== 'undefined') console.log(result)
+  if (typeof result !== 'undefined') {
+    if (result && typeof result === 'object') {
+      if (typeof result.on === 'function') {
+        await new Promise((resolve, reject) => {
+          result.on('data', data => console.log(data))
+          result.on('end', resolve)
+          result.on('error', reject)
+        })
+      }
+    } else {
+      console.log(result)
+    }
+  }
 
   const timeout = setTimeout(() => {
     console.error('Side-effects are keeping the process running. Exiting...')
