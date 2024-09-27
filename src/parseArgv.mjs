@@ -14,7 +14,7 @@
  */
 export default async function parseArgv (cli, args) {
   /** @type {Export} */
-  const program = cli.exports.length >= 1 ? cli.exports[0] : cli.exports.find(e => e.name === args[0])
+  const program = cli.exports.length <= 1 ? cli.exports[0] : cli.exports.find(e => e.name === args[0])
   if (!program) throw new Error(`Invalid command line arguments: ${args.join(' ')}`)
   if (cli.exports.length > 1) args.shift()
 
@@ -25,9 +25,11 @@ export default async function parseArgv (cli, args) {
   if (params.length === 1) {
     const firstParam = []
     while (args.length && !args[0].startsWith('-')) firstParam.push(args.shift())
+    if (firstParam.length === 0) throw new Error(`Missing required argument "${params[0].name}".`)
     parsed.push(getValue(firstParam.join(' '), params[0]))
   } else if (params.length > 1) {
     for (const param of params) {
+      if (args.length === 0) throw new Error(`Missing required argument "${param.name}".`)
       const value = getValue(args.shift(), param)
       parsed.push(value)
     }
