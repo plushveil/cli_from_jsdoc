@@ -55,7 +55,7 @@ export default async function parse (file) {
   walk.simple(ast, {
     ExportAllDeclaration (node) {
       cli.exports.push((async () => {
-        const file = import.meta.resolve(node.source.value, url.pathToFileURL(path.dirname(cli.file)))
+        const file = path.resolve(path.dirname(cli.file), ...node.source.value.split('/'))
         const nested = await parse(url.fileURLToPath(file))
         return nested.exports
       })())
@@ -73,7 +73,7 @@ export default async function parse (file) {
       } else if (node.specifiers?.length) {
         node.specifiers.forEach(specifier => {
           if (node.source) {
-            const file = url.fileURLToPath(import.meta.resolve(node.source.value, url.pathToFileURL(path.dirname(cli.file))))
+            const file = path.resolve(path.dirname(cli.file), ...(node.source.value.split('/')))
             cli.exports.push((async () => {
               const result = {
                 name: specifier.exported.name,
@@ -122,8 +122,8 @@ export default async function parse (file) {
  * @returns {Promise<Source>}
  */
 async function getSource (file, name) {
-  if (!fs.existsSync(file)) return 0
-  if (!fs.statSync(file).isFile()) return 0
+  if (!fs.existsSync(file)) throw new Error(`File not found: ${file}`)
+  if (!fs.statSync(file).isFile()) throw new Error(`Not a file: ${file}`)
 
   const content = fs.readFileSync(file, 'utf-8')
   const ast = acorn.parse(content, { ecmaVersion: 'latest', sourceType: 'module' })

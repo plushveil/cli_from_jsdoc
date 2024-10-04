@@ -1,6 +1,6 @@
 {
   "name": "@plushveil/cli_from_jsdoc",
-  "version": "0.0.6",
+  "version": "0.0.7",
   "description": "Create a CLI from a JSDoc annotated JavaScript file",
   "author": "Plushveil <plushveil@gray.blue>",
   "license": "SEE LICENSE IN LICENSE",
@@ -19,8 +19,8 @@
     "comment-parser": "^1.4.1"
   },
   "devDependencies": {
-    "eslint": "^9.10.0",
-    "neostandard": "^0.11.5",
+    "eslint": "^9.11.1",
+    "neostandard": "^0.11.6",
     "npm-run-all": "^4.1.5"
   }
 }
