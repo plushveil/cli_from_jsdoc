@@ -56,7 +56,7 @@ export default async function parse (file) {
     ExportAllDeclaration (node) {
       cli.exports.push((async () => {
         const file = path.resolve(path.dirname(cli.file), ...node.source.value.split('/'))
-        const nested = await parse(url.fileURLToPath(file))
+        const nested = await parse(file)
         return nested.exports
       })())
     },
