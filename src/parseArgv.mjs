@@ -90,7 +90,7 @@ export default async function parseArgv (cli, args) {
     parsed.push(value)
   }
 
-  while (typeof parsed[parsed.length - 1] === 'undefined') parsed.pop()
+  while (parsed.length && typeof parsed[parsed.length - 1] === 'undefined') parsed.pop()
   if (parsed.length < params.length) {
     throw new Error(`Missing required arguments: ${params.slice(parsed.length).map(p => `<${p.name}>`).join(' ')}`)
   }
