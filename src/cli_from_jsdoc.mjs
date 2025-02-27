@@ -1,3 +1,5 @@
+import * as url from 'node:url'
+
 import parseArgv from './parseArgv.mjs'
 
 export { default as parse } from './parse.mjs'
@@ -36,7 +38,7 @@ export async function execute (cli, args = process.argv.slice(2)) {
     process.exit(1)
   }
 
-  const api = await import(task.source.file)
+  const api = await import(url.pathToFileURL(task.source.file))
   const result = await api[task.source.name](...params)
   if (typeof result !== 'undefined') {
     if (result && typeof result === 'object') {
